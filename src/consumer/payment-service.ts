@@ -1,5 +1,6 @@
 import { kafka } from '../config/kafka';
 import { TOPICS, OrderPlacedEvent, PaymentSuccessEvent } from '../interfaces/events';
+import { sendToDLQ } from '../producer/dlq-producer';
 
 export class PaymentService {
     private consumer = kafka.consumer({ groupId: 'payment-group' });
@@ -61,6 +62,15 @@ export class PaymentService {
                         }
                     } catch (error) {
                         console.error('[PaymentService] Error processing message:', error);
+                        await sendToDLQ({
+                            originalTopic: topic,
+                            originalMessage: message.value.toString(),
+                            error: error instanceof Error ? error.message : String(error),
+                            serviceName: 'PaymentService',
+                            timestamp: new Date().toISOString(),
+                            partition,
+                            offset: message.offset,
+                        });
                     }
                 }
             },

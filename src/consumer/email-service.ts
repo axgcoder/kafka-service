@@ -1,5 +1,6 @@
 import { kafka } from '../config/kafka';
 import { TOPICS, PaymentSuccessEvent, PaymentFailedEvent } from '../interfaces/events';
+import { sendToDLQ } from '../producer/dlq-producer';
 
 export class EmailService {
     private consumer = kafka.consumer({ groupId: 'email-group' });
@@ -36,6 +37,15 @@ export class EmailService {
                         }
                     } catch (error) {
                         console.error('[EmailService] Error processing message:', error);
+                        await sendToDLQ({
+                            originalTopic: topic,
+                            originalMessage: message.value.toString(),
+                            error: error instanceof Error ? error.message : String(error),
+                            serviceName: 'EmailService',
+                            timestamp: new Date().toISOString(),
+                            partition,
+                            offset: message.offset,
+                        });
                     }
                 }
             },
