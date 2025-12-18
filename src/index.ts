@@ -3,6 +3,7 @@ import { PaymentService } from './consumer/payment-service';
 import { InventoryService } from './consumer/inventory-service';
 import { EmailService } from './consumer/email-service';
 import { AnalyticsService } from './consumer/analytics-service';
+import { DLQConsumer } from './consumer/dlq-consumer';
 
 import { createTopics } from './create-topics';
 
@@ -18,6 +19,7 @@ async function main() {
     const inventoryService = new InventoryService();
     const emailService = new EmailService();
     const analyticsService = new AnalyticsService();
+    const dlqConsumer = new DLQConsumer();
 
     // Start Consumers
     await Promise.all([
@@ -25,6 +27,7 @@ async function main() {
         inventoryService.connect(),
         emailService.connect(),
         analyticsService.connect(),
+        dlqConsumer.connect(),
     ]);
 
     // Start Producer

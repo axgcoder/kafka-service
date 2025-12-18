@@ -29,6 +29,18 @@ The project is configured to use Kafka in **KRaft mode** (without Zookeeper) for
 *   **Admin Client**: Used to programmatically create topics.
 *   **Consumer Groups**: Each service runs in its own consumer group (e.g., `payment-group`, `inventory-group`). This ensures that *every* service gets a copy of the event (Fan-out pattern).
 
+### 4. Dead Letter Queue (DLQ)
+Failed messages are automatically sent to a **Dead Letter Queue** instead of being lost or blocking the consumer.
+
+*   **DLQ Producer**: A shared utility (`dlq-producer.ts`) sends failed messages to the `dead-letter-queue` topic.
+*   **DLQ Consumer**: Monitors the DLQ and logs failed messages with full context (original topic, error, service name, partition, offset).
+*   **Error Context**: Each DLQ message includes the original message content so it can be investigated or replayed later.
+
+This pattern ensures:
+- No message loss during processing failures
+- Consumers keep processing without blocking
+- Failed messages are captured for debugging and potential retry
+
 ## Prerequisites
 
 *   [Docker](https://www.docker.com/) & Docker Compose
@@ -63,11 +75,11 @@ The project is configured to use Kafka in **KRaft mode** (without Zookeeper) for
 ## Project Structure
 
 *   `src/index.ts`: Main entry point. Initializes topics and starts all services.
-*   `src/producer`: Contains the OrderService logic.
-*   `src/consumer`: Contains the consumer services (Payment, Inventory, Email, Analytics).
+*   `src/producer/`: Contains the OrderService and DLQ producer utility.
+*   `src/consumer/`: Contains the consumer services (Payment, Inventory, Email, Analytics, DLQ).
 *   `src/create-topics.ts`: Script to ensure Kafka topics exist.
-*   `src/config`: Kafka client configuration.
-*   `src/interfaces`: Shared TypeScript interfaces for events.
+*   `src/config/`: Kafka client configuration.
+*   `src/interfaces/`: Shared TypeScript interfaces for events and DLQ messages.
 *   `docker-compose.yml`: Infrastructure definition (KRaft mode).
 
 ## Troubleshooting
